@@ -42,6 +42,14 @@ class _MockAuthService implements AuthService {
       message: null,
     );
   }
+
+  @override
+  Future<({bool success, User? user, String? message})> restoreSession() async {
+    return (success: false, user: null, message: 'mock');
+  }
+
+  @override
+  Future<void> logout() async {}
 }
 
 Widget _buildApp() {

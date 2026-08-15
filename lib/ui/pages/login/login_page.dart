@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../state/auth_view_model.dart';
+import '../../components/toast.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/app_spacing.dart';
+import '../../theme/app_text_scale.dart';
 import 'widgets/agreement.dart';
 import 'widgets/code_field.dart';
 import 'widgets/login_button.dart';
@@ -53,7 +57,8 @@ class _LoginPageState extends State<LoginPage> {
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.pageHorizontal),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -62,7 +67,7 @@ class _LoginPageState extends State<LoginPage> {
                           controller: _phoneCtrl,
                           onChanged: vm.updatePhone,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.lg),
                         CodeField(
                           controller: _codeCtrl,
                           onChanged: vm.updateCode,
@@ -73,20 +78,20 @@ class _LoginPageState extends State<LoginPage> {
                             onPressed: vm.sendCode,
                           ),
                         ),
-                        const SizedBox(height: 40),
+                        const SizedBox(height: AppSpacing.xxxl + AppSpacing.lg),
                         LoginButton(
                           canLogin: state.canLogin,
                           loading: state.loading,
                           onPressed: vm.login,
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.lg),
                         Agreement(
                           agreed: state.agreed,
                           onToggle: () => vm.toggleAgreement(),
                         ),
                         const Spacer(),
                         const _Footer(),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: AppSpacing.xxl),
                       ],
                     ),
                   ),
@@ -105,25 +110,16 @@ class _LoginPageState extends State<LoginPage> {
       if (!mounted) return;
       final s = vm.state;
       if (s.error != null) {
-        _toast(context, s.error!);
+        showToast(context, s.error!);
         vm.clearError();
         return;
       }
       if (s.loggedInUser != null) {
-        _toast(context, '登录成功，欢迎${s.loggedInUser!.nickname}');
+        showToast(context, '登录成功，欢迎${s.loggedInUser!.nickname}');
         vm.clearLoggedInUser();
+        // 跳转由 _SplashGate 监听 currentUser 变化自动完成
       }
     });
-  }
-
-  void _toast(BuildContext context, String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 }
 
@@ -135,7 +131,8 @@ class _Footer extends StatelessWidget {
     return const Center(
       child: Text(
         '登录即代表你愿意接受我们的服务条款',
-        style: TextStyle(fontSize: 12, color: Color(0xFFB5B5B5)),
+        style: TextStyle(
+            fontSize: AppTextScale.footer, color: AppColors.footer),
       ),
     );
   }

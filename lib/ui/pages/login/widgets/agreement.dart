@@ -1,6 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
+import '../../../theme/app_colors.dart';
+import '../../../theme/app_text_scale.dart';
 import '../../legal/privacy_policy.dart';
 import '../../legal/user_agreement.dart';
 
@@ -66,7 +68,7 @@ class _AgreementState extends State<Agreement> {
 
   @override
   Widget build(BuildContext context) {
-    const linkStyle = TextStyle(color: Color(0xFF8C7547));
+    const linkStyle = TextStyle(color: AppColors.goldDark);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -86,7 +88,8 @@ class _AgreementState extends State<Agreement> {
             padding: const EdgeInsets.only(top: 3),
             child: Text.rich(
               TextSpan(
-                style: const TextStyle(fontSize: 12, color: Color(0xFF9A9A9A)),
+                style: const TextStyle(
+                    fontSize: AppTextScale.footer, color: AppColors.subInk),
                 children: [
                   TextSpan(
                     text: '我已阅读并同意 ',

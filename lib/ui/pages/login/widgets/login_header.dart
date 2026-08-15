@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../theme/app_colors.dart';
+import '../../../theme/app_spacing.dart';
+import '../../../theme/app_text_scale.dart';
+
 /// 登录页标题区
 class LoginHeader extends StatelessWidget {
   const LoginHeader({super.key});
@@ -13,17 +17,18 @@ class LoginHeader extends StatelessWidget {
         Text(
           '进入硅基星球',
           style: TextStyle(
-            fontSize: 26,
+            fontSize: AppTextScale.display + 2,
             fontWeight: FontWeight.bold,
-            color: Color(0xFF1F1F1F),
+            color: AppColors.ink,
           ),
         ),
-        SizedBox(height: 8),
+        SizedBox(height: AppSpacing.sm),
         Text(
           '使用手机号验证码即可继续',
-          style: TextStyle(fontSize: 14, color: Color(0xFF9A9A9A)),
+          style: TextStyle(
+              fontSize: AppTextScale.body, color: AppColors.subInk),
         ),
-        SizedBox(height: 32),
+        SizedBox(height: AppSpacing.xxxl + AppSpacing.xs),
       ],
     );
   }

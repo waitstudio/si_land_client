@@ -1,5 +1,6 @@
 import '../../core/result.dart';
 import '../entities/auth.dart';
+import '../entities/user.dart';
 
 /// 认证仓库抽象
 ///
@@ -11,4 +12,10 @@ abstract class AuthRepository {
 
   /// 验证码登录
   Future<Result<LoginResult>> login({required String phone, required String code});
+
+  /// 获取当前登录用户信息（/auth/me）
+  Future<Result<User>> fetchMe();
+
+  /// 清除本地 token（退出登录）
+  Future<void> clearToken();
 }

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../../../core/config.dart';
+import '../../../theme/app_spacing.dart';
+
 /// 验证码输入框
 ///
 /// 通过 [controller] 与外部状态同步，[onChanged] 触发上层刷新。
@@ -22,14 +25,14 @@ class CodeField extends StatelessWidget {
     return TextField(
       controller: controller,
       keyboardType: TextInputType.number,
-      maxLength: 6,
+      maxLength: AppConstants.smsCodeMaxLength,
       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       onChanged: onChanged,
       decoration: InputDecoration(
         hintText: '请输入验证码',
         counterText: '',
         suffixIcon: Padding(
-          padding: const EdgeInsets.only(right: 8),
+          padding: const EdgeInsets.only(right: AppSpacing.sm),
           child: suffix,
         ),
         suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),

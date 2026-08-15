@@ -1,87 +1,15 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
-
 import '../core/config.dart';
-import '../domain/entities/user.dart';
 import '../domain/services/auth_service.dart';
-
-/// 认证页面状态
-@immutable
-class AuthState {
-  const AuthState({
-    this.phone = '',
-    this.code = '',
-    this.agreed = false,
-    this.sending = false,
-    this.loading = false,
-    this.countdown = 0,
-    this.error,
-    this.loggedInUser,
-  });
-
-  final String phone;
-  final String code;
-  final bool agreed;
-
-  /// 发送验证码中
-  final bool sending;
-
-  /// 登录中
-  final bool loading;
-
-  /// 倒计时剩余秒数
-  final int countdown;
-
-  /// 最近一次错误信息（null 表示无）
-  final String? error;
-
-  /// 登录成功的用户（非 null 表示已登录）
-  final User? loggedInUser;
-
-  /// 派生：手机号是否合法
-  bool get isPhoneValid => RegExp(r'^1[3-9]\d{9}$').hasMatch(phone);
-
-  /// 派生：验证码是否合法
-  bool get isCodeValid => code.length >= 4;
-
-  /// 派生：是否可登录
-  bool get canLogin =>
-      isPhoneValid && isCodeValid && agreed && !loading;
-
-  /// 派生：是否可发送验证码
-  bool get canSendCode => !sending && countdown == 0 && isPhoneValid;
-
-  AuthState copyWith({
-    String? phone,
-    String? code,
-    bool? agreed,
-    bool? sending,
-    bool? loading,
-    int? countdown,
-    String? error,
-    User? loggedInUser,
-    bool clearError = false,
-    bool clearUser = false,
-  }) {
-    return AuthState(
-      phone: phone ?? this.phone,
-      code: code ?? this.code,
-      agreed: agreed ?? this.agreed,
-      sending: sending ?? this.sending,
-      loading: loading ?? this.loading,
-      countdown: countdown ?? this.countdown,
-      error: clearError ? null : (error ?? this.error),
-      loggedInUser: clearUser ? null : (loggedInUser ?? this.loggedInUser),
-    );
-  }
-}
+import 'auth_state.dart';
+import 'base_view_model.dart';
 
 /// 认证 ViewModel
 ///
 /// 持有 [AuthState]，通过 [AuthService] 编排业务，UI 通过 Provider 订阅。
 /// UI 不直接接触 service / repository，只调用本类的方法。
-class AuthViewModel extends ChangeNotifier {
+class AuthViewModel extends BaseViewModel {
   AuthViewModel(this._service);
 
   final AuthService _service;
@@ -90,36 +18,59 @@ class AuthViewModel extends ChangeNotifier {
   AuthState _state = const AuthState();
   AuthState get state => _state;
 
-  void _emit(AuthState newState) {
+  void _set(AuthState newState) {
     _state = newState;
-    notifyListeners();
+    emit();
   }
 
   void updatePhone(String v) =>
-      _emit(_state.copyWith(phone: v, clearError: true));
+      _set(_state.copyWith(phone: v, clearError: true));
 
   void updateCode(String v) =>
-      _emit(_state.copyWith(code: v, clearError: true));
+      _set(_state.copyWith(code: v, clearError: true));
 
   void toggleAgreement({bool? value}) =>
-      _emit(_state.copyWith(agreed: value ?? !_state.agreed));
+      _set(_state.copyWith(agreed: value ?? !_state.agreed));
+
+  /// 启动时尝试恢复登录会话
+  ///
+  /// 调用 /auth/me：
+  /// - 成功（token 有效）→ 设置 currentUser，UI 跳转 MainShell
+  /// - 失败（无 token / token 过期 / 网络错误）→ 显示登录页
+  Future<void> restoreSession() async {
+    _set(_state.copyWith(restoring: true, clearError: true));
+    final res = await _service.restoreSession();
+    if (res.success && res.user != null) {
+      _set(_state.copyWith(
+        restoring: false,
+        restored: true,
+        currentUser: res.user,
+        clearError: true,
+      ));
+    } else {
+      _set(_state.copyWith(
+        restoring: false,
+        restored: true,
+        clearCurrentUser: true,
+      ));
+    }
+  }
 
   /// 发送验证码
   Future<void> sendCode() async {
     if (!_state.canSendCode) return;
 
-    _emit(_state.copyWith(sending: true, clearError: true));
+    _set(_state.copyWith(sending: true, clearError: true));
     final res = await _service.sendCode(_state.phone);
-    if (!hasListeners) return;
 
     if (res.success) {
       _startCountdown();
-      _emit(_state.copyWith(
+      _set(_state.copyWith(
         sending: false,
         error: '验证码已发送，有效期 ${res.expireIn} 秒',
       ));
     } else {
-      _emit(_state.copyWith(sending: false, error: res.message));
+      _set(_state.copyWith(sending: false, error: res.message));
     }
   }
 
@@ -127,27 +78,27 @@ class AuthViewModel extends ChangeNotifier {
   Future<void> login() async {
     if (!_state.canLogin) return;
 
-    _emit(_state.copyWith(loading: true, clearError: true));
+    _set(_state.copyWith(loading: true, clearError: true));
     final res = await _service.login(
       phone: _state.phone,
       code: _state.code,
     );
-    if (!hasListeners) return;
 
     if (res.success && res.result != null) {
-      _emit(_state.copyWith(
+      _set(_state.copyWith(
         loading: false,
         loggedInUser: res.result!.user,
+        currentUser: res.result!.user,
         error: null,
       ));
     } else {
-      _emit(_state.copyWith(loading: false, error: res.message));
+      _set(_state.copyWith(loading: false, error: res.message));
     }
   }
 
   void _startCountdown() {
     _timer?.cancel();
-    _emit(_state.copyWith(countdown: ApiConfig.resendCooldown));
+    _set(_state.copyWith(countdown: AppConstants.resendCooldown));
     _timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!hasListeners) {
         t.cancel();
@@ -156,18 +107,28 @@ class AuthViewModel extends ChangeNotifier {
       final next = _state.countdown - 1;
       if (next <= 0) {
         t.cancel();
-        _emit(_state.copyWith(countdown: 0));
+        _set(_state.copyWith(countdown: 0));
       } else {
-        _emit(_state.copyWith(countdown: next));
+        _set(_state.copyWith(countdown: next));
       }
     });
   }
 
   /// 消费错误信息（UI 展示后清除）
-  void clearError() => _emit(_state.copyWith(clearError: true));
+  void clearError() => _set(_state.copyWith(clearError: true));
 
   /// 消费登录成功用户（UI 展示后清除，避免重复提示）
-  void clearLoggedInUser() => _emit(_state.copyWith(clearUser: true));
+  void clearLoggedInUser() => _set(_state.copyWith(clearUser: true));
+
+  /// 退出登录，清除本地 token 与当前用户
+  Future<void> logout() async {
+    await _service.logout();
+    _set(_state.copyWith(
+      clearUser: true,
+      clearCurrentUser: true,
+      clearError: true,
+    ));
+  }
 
   @override
   void dispose() {

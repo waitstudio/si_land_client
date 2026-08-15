@@ -1,4 +1,5 @@
-import '../../domain/entities/auth.dart';
+import '../entities/auth.dart';
+import '../entities/user.dart';
 
 /// 认证领域服务抽象
 ///
@@ -13,4 +14,10 @@ abstract class AuthService {
     required String phone,
     required String code,
   });
+
+  /// 通过本地 token 恢复会话（/auth/me），成功返回当前用户
+  Future<({bool success, User? user, String? message})> restoreSession();
+
+  /// 退出登录，清除本地 token
+  Future<void> logout();
 }

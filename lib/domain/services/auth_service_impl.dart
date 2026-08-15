@@ -1,8 +1,9 @@
 import '../../core/result.dart';
+import '../../core/utils/phone_validator.dart';
 import '../../domain/entities/auth.dart';
+import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/services/auth_service.dart';
-import '../../domain/utils/phone.dart';
 
 /// 认证领域服务默认实现
 ///
@@ -58,5 +59,27 @@ class AuthServiceImpl implements AuthService {
           message: error.message,
         ),
     };
+  }
+
+  @override
+  Future<({bool success, User? user, String? message})> restoreSession() async {
+    final result = await _repo.fetchMe();
+    return switch (result) {
+      Success<User>(:final data) => (
+          success: true,
+          user: data,
+          message: null,
+        ),
+      Failure<User>(:final error) => (
+          success: false,
+          user: null,
+          message: error.message,
+        ),
+    };
+  }
+
+  @override
+  Future<void> logout() async {
+    await _repo.clearToken();
   }
 }

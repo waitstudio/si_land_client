@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../../theme/app_colors.dart';
+import '../../../theme/app_text_scale.dart';
+
 /// 发送验证码按钮（带倒计时与状态切换）
 ///
 /// 纯展示组件，所有状态由外部传入。
@@ -30,9 +33,9 @@ class SendCodeButton extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
-          fontSize: 14,
+          fontSize: AppTextScale.body,
           fontWeight: FontWeight.w500,
-          color: disabled ? const Color(0xFFC0C0C0) : const Color(0xFF8C7547),
+          color: disabled ? AppColors.disabled : AppColors.goldDark,
         ),
       ),
     );
