@@ -114,6 +114,27 @@ class AuthViewModel extends BaseViewModel {
     });
   }
 
+  /// 修改昵称
+  ///
+  /// 成功后更新 currentUser；失败把 message 写入 error。
+  Future<({bool success, String? message})> updateNickname(
+      String nickname) async {
+    if (_state.updating) return (success: false, message: null);
+
+    _set(_state.copyWith(updating: true, clearError: true));
+    final res = await _service.updateNickname(nickname);
+    if (res.success && res.user != null) {
+      _set(_state.copyWith(
+        updating: false,
+        currentUser: res.user,
+        clearError: true,
+      ));
+      return (success: true, message: null);
+    }
+    _set(_state.copyWith(updating: false, error: res.message));
+    return (success: false, message: res.message);
+  }
+
   /// 消费错误信息（UI 展示后清除）
   void clearError() => _set(_state.copyWith(clearError: true));
 

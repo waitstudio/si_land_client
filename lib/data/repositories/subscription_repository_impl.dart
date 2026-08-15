@@ -18,14 +18,30 @@ class RestSubscriptionRepository implements SubscriptionRepository {
   final ApiClient _client;
 
   @override
-  Future<Result<Streamer>> subscribe(String douyinId) async {
+  Future<Result<Streamer>> subscribeById(String streamerId) async {
     return guardAsync(() async {
-      final json = await _client.post(ApiConfig.streamersPath, body: {
+      final json =
+          await _client.post(ApiConfig.streamerSubscribePath(streamerId));
+      final apiRes = ApiResponse.fromJson(
+        json,
+        (raw) => StreamerDto.fromJson(raw as Map<String, dynamic>).toDomain(),
+      );
+      if (!apiRes.isSuccess) {
+        throw ApiError(code: apiRes.code, message: apiRes.msg);
+      }
+      return apiRes.data!;
+    });
+  }
+
+  @override
+  Future<Result<int>> wish(String douyinId) async {
+    return guardAsync(() async {
+      final json = await _client.post(ApiConfig.streamersWishPath, body: {
         'douyin_id': douyinId,
       });
       final apiRes = ApiResponse.fromJson(
         json,
-        (raw) => StreamerDto.fromJson(raw as Map<String, dynamic>).toDomain(),
+        (raw) => (raw as Map<String, dynamic>)['want_count'] as int,
       );
       if (!apiRes.isSuccess) {
         throw ApiError(code: apiRes.code, message: apiRes.msg);

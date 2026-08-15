@@ -98,6 +98,29 @@ class RestAuthRepository implements AuthRepository {
     });
   }
 
+  @override
+  Future<Result<User>> updateNickname(String nickname) async {
+    return guardAsync(() async {
+      final json = await _client.put(ApiConfig.authNicknamePath, body: {
+        'nickname': nickname,
+      });
+      final apiRes = ApiResponse.fromJson(
+        json,
+        (raw) => UserDto.fromJson(raw as Map<String, dynamic>),
+      );
+      if (!apiRes.isSuccess) {
+        throw ApiError(code: apiRes.code, message: apiRes.msg);
+      }
+      final dto = apiRes.data!;
+      return User(
+        userId: dto.userId,
+        phone: dto.phone,
+        nickname: dto.nickname,
+        avatar: dto.avatar,
+      );
+    });
+  }
+
   /// 清除本地 token（退出登录）
   @override
   Future<void> clearToken() => _authStorage.clear();

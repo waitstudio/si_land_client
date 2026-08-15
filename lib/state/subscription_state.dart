@@ -11,6 +11,7 @@ class SubscriptionState {
     this.loading = false,
     this.loadingPopular = false,
     this.subscribing = false,
+    this.wishing = false,
     this.error,
     this.pendingNotify,
   });
@@ -26,8 +27,11 @@ class SubscriptionState {
   /// 加载热门列表中
   final bool loadingPopular;
 
-  /// 订阅中（添加主播）
+  /// 订阅中（热门主播订阅按钮）
   final bool subscribing;
+
+  /// 想看意愿提交中（手动输入抖音号）
+  final bool wishing;
 
   final String? error;
 
@@ -40,6 +44,7 @@ class SubscriptionState {
     bool? loading,
     bool? loadingPopular,
     bool? subscribing,
+    bool? wishing,
     String? error,
     LiveNotify? pendingNotify,
     bool clearError = false,
@@ -51,6 +56,7 @@ class SubscriptionState {
       loading: loading ?? this.loading,
       loadingPopular: loadingPopular ?? this.loadingPopular,
       subscribing: subscribing ?? this.subscribing,
+      wishing: wishing ?? this.wishing,
       error: clearError ? null : (error ?? this.error),
       pendingNotify: clearNotify ? null : (pendingNotify ?? this.pendingNotify),
     );

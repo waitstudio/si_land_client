@@ -79,6 +79,29 @@ class AuthServiceImpl implements AuthService {
   }
 
   @override
+  Future<({bool success, User? user, String? message})> updateNickname(
+      String nickname) async {
+    final trimmed = nickname.trim();
+    final len = trimmed.runes.length;
+    if (len < 2 || len > 20) {
+      return (success: false, user: null, message: '昵称长度需为 2-20 位');
+    }
+    final result = await _repo.updateNickname(trimmed);
+    return switch (result) {
+      Success<User>(:final data) => (
+          success: true,
+          user: data,
+          message: null,
+        ),
+      Failure<User>(:final error) => (
+          success: false,
+          user: null,
+          message: error.message,
+        ),
+    };
+  }
+
+  @override
   Future<void> logout() async {
     await _repo.clearToken();
   }

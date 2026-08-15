@@ -65,6 +65,29 @@ class ApiClient {
     }
   }
 
+  /// PUT JSON 请求，返回响应体（已解析为 Map）。
+  Future<Map<String, dynamic>> put(
+    String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+  }) async {
+    final uri = Uri.parse('${ApiConfig.baseUrl}$path');
+    try {
+      final res = await _client
+          .put(
+            uri,
+            headers: await _buildHeaders(auth),
+            body: body == null ? null : jsonEncode(body),
+          )
+          .timeout(_timeout);
+      return _decode(res.body);
+    } on SocketException {
+      throw NetworkError();
+    } on TimeoutException {
+      throw NetworkError('请求超时，请稍后再试');
+    }
+  }
+
   /// DELETE 请求，返回响应体（已解析为 Map）。
   Future<Map<String, dynamic>> delete(String path, {bool auth = true}) async {
     final uri = Uri.parse('${ApiConfig.baseUrl}$path');

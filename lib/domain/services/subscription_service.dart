@@ -5,8 +5,12 @@ import '../entities/streamer.dart';
 /// 封装订阅编排逻辑（校验、调用仓库、结果转换）。
 /// UI / ViewModel 通过此抽象调用，便于替换实现或测试。
 abstract class SubscriptionService {
-  /// 订阅主播
-  Future<({bool success, Streamer? streamer, String? message})> subscribe(
+  /// 按主播 ID 订阅热门主播
+  Future<({bool success, Streamer? streamer, String? message})> subscribeById(
+      String streamerId);
+
+  /// 提交想看意愿
+  Future<({bool success, int wantCount, String? message})> wish(
       String douyinId);
 
   /// 拉取订阅列表

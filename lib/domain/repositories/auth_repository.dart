@@ -16,6 +16,9 @@ abstract class AuthRepository {
   /// 获取当前登录用户信息（/auth/me）
   Future<Result<User>> fetchMe();
 
+  /// 修改当前登录用户昵称（/auth/nickname）
+  Future<Result<User>> updateNickname(String nickname);
+
   /// 清除本地 token（退出登录）
   Future<void> clearToken();
 }

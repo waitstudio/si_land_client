@@ -30,6 +30,9 @@ class AppConstants {
   /// 热门主播列表拉取上限
   static const int popularListLimit = 100;
 
+  /// 通知列表每页条数
+  static const int noticePageSize = 20;
+
   /// 开播通知调度延迟（秒）
   static const int notifyScheduleDelaySeconds = 15;
 
@@ -41,4 +44,19 @@ class AppConstants {
 
   /// banner 滑入动画时长（毫秒）
   static const int bannerAnimDurationMs = 250;
+
+  /// WS 心跳间隔（秒），服务端 90s 空闲超时的三分之一余量
+  static const int wsHeartbeatSeconds = 30;
+
+  /// WS 断线重连基础延迟（秒），指数退避起点
+  static const int wsReconnectBaseDelaySeconds = 1;
+
+  /// WS 断线重连最大延迟（秒）
+  static const int wsReconnectMaxDelaySeconds = 60;
+
+  /// WS 通知弹窗自动消失时长（秒）
+  static const int noticeBannerDismissSeconds = 4;
+
+  /// 防重复弹窗的 notice id 缓存容量
+  static const int noticeDedupCacheSize = 100;
 }

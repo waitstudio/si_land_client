@@ -13,13 +13,9 @@ class SubscriptionServiceImpl implements SubscriptionService {
   final SubscriptionRepository _repo;
 
   @override
-  Future<({bool success, Streamer? streamer, String? message})> subscribe(
-      String douyinId) async {
-    final id = douyinId.trim();
-    if (id.isEmpty) {
-      return (success: false, streamer: null, message: '请输入抖音号');
-    }
-    final result = await _repo.subscribe(id);
+  Future<({bool success, Streamer? streamer, String? message})> subscribeById(
+      String streamerId) async {
+    final result = await _repo.subscribeById(streamerId);
     return switch (result) {
       Success<Streamer>(:final data) => (
           success: true,
@@ -29,6 +25,28 @@ class SubscriptionServiceImpl implements SubscriptionService {
       Failure<Streamer>(:final error) => (
           success: false,
           streamer: null,
+          message: error.message,
+        ),
+    };
+  }
+
+  @override
+  Future<({bool success, int wantCount, String? message})> wish(
+      String douyinId) async {
+    final id = douyinId.trim();
+    if (id.isEmpty) {
+      return (success: false, wantCount: 0, message: '请输入抖音号');
+    }
+    final result = await _repo.wish(id);
+    return switch (result) {
+      Success<int>(:final data) => (
+          success: true,
+          wantCount: data,
+          message: null,
+        ),
+      Failure<int>(:final error) => (
+          success: false,
+          wantCount: 0,
           message: error.message,
         ),
     };

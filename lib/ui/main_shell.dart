@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import '../state/unread_badge.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_text_scale.dart';
 import 'pages/discover/discover_page.dart';
@@ -31,6 +33,8 @@ class _MainShellState extends State<MainShell> {
 
   @override
   Widget build(BuildContext context) {
+    // 全局红点数据源：WS 实时推送 / 冷启动拉取 / 消息页操作均更新它
+    final badge = context.watch<UnreadBadge>();
     return Scaffold(
       body: IndexedStack(index: _index, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
@@ -41,14 +45,23 @@ class _MainShellState extends State<MainShell> {
         unselectedItemColor: AppColors.subInk,
         selectedFontSize: AppTextScale.caption + 1,
         unselectedFontSize: AppTextScale.caption + 1,
-        items: const [
-          BottomNavigationBarItem(
+        items: [
+          const BottomNavigationBarItem(
               icon: Icon(Icons.explore_outlined), label: '发现'),
-          BottomNavigationBarItem(
+          const BottomNavigationBarItem(
               icon: Icon(Icons.star_outline), label: '订阅'),
           BottomNavigationBarItem(
-              icon: Icon(Icons.notifications_none_outlined), label: '消息'),
-          BottomNavigationBarItem(
+            icon: Badge(
+              label: Text(
+                badge.badgeLabel,
+                style: const TextStyle(fontSize: 10),
+              ),
+              isLabelVisible: badge.hasUnread,
+              child: const Icon(Icons.notifications_none_outlined),
+            ),
+            label: '消息',
+          ),
+          const BottomNavigationBarItem(
               icon: Icon(Icons.person_outline), label: '我的'),
         ],
       ),

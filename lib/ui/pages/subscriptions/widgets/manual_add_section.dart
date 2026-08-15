@@ -6,21 +6,21 @@ import '../../../theme/app_radius.dart';
 import '../../../theme/app_spacing.dart';
 import '../../../theme/app_text_scale.dart';
 
-/// 手动输入抖音号订阅区块
+/// 手动输入抖音号提交想看意愿区块
 ///
-/// 兜底入口：用户在热门列表没找到喜欢的主播时使用。
-/// 校验逻辑与后端 validate_douyin_id 对齐，详见 [DouyinIdValidator]。
+/// 兜底入口：用户在热门列表没找到喜欢的主播时，输入抖音号提交想看意愿，
+/// 运营据此决定是否收录该主播。校验逻辑与后端 validate_douyin_id 对齐。
 class ManualAddSection extends StatefulWidget {
   const ManualAddSection({
     super.key,
-    required this.onSubscribe,
-    required this.subscribing,
+    required this.onWish,
+    required this.wishing,
   });
 
-  final Future<void> Function(String douyinId) onSubscribe;
+  final Future<void> Function(String douyinId) onWish;
 
-  /// 订阅进行中：禁用按钮，避免重复提交
-  final bool subscribing;
+  /// 想看意愿提交中：禁用按钮，避免重复提交
+  final bool wishing;
 
   @override
   State<ManualAddSection> createState() => _ManualAddSectionState();
@@ -44,13 +44,13 @@ class _ManualAddSectionState extends State<ManualAddSection> {
       return;
     }
     setState(() => _error = null);
-    await widget.onSubscribe(id);
+    await widget.onWish(id);
   }
 
   @override
   Widget build(BuildContext context) {
     final canSubmit =
-        _ctrl.text.trim().isNotEmpty && _error == null && !widget.subscribing;
+        _ctrl.text.trim().isNotEmpty && _error == null && !widget.wishing;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
           AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.lg),
@@ -115,7 +115,7 @@ class _ManualAddSectionState extends State<ManualAddSection> {
                   shape: RoundedRectangleBorder(
                       borderRadius: AppRadius.mdR),
                 ),
-                child: const Text('订阅'),
+                child: const Text('想看'),
               ),
             ],
           ),

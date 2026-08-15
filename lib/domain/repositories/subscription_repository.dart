@@ -6,8 +6,11 @@ import '../entities/streamer.dart';
 /// data 层提供实现（如 RestSubscriptionRepository）；
 /// 测试时可注入 mock 实现，业务层与 UI 层不依赖具体实现。
 abstract class SubscriptionRepository {
-  /// 订阅主播（按抖音号）
-  Future<Result<Streamer>> subscribe(String douyinId);
+  /// 按主播 ID 订阅热门主播
+  Future<Result<Streamer>> subscribeById(String streamerId);
+
+  /// 提交想看意愿（输入想看的主播抖音号，按 douyin_id 去重累加计数）
+  Future<Result<int>> wish(String douyinId);
 
   /// 我的订阅列表
   Future<Result<List<Streamer>>> list();

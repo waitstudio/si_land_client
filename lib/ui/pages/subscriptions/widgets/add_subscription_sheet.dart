@@ -14,10 +14,10 @@ import 'popular_streamer_tile.dart';
 /// 添加订阅底部弹框
 ///
 /// 上半部分：热门主播列表（按人气降序，每项右侧带订阅按钮）
-/// 下半部分：手动输入抖音号订阅（兜底入口）
+/// 下半部分：手动输入抖音号提交想看意愿（兜底入口）
 ///
-/// 调用方传入 [vm]，sheet 内部直接调用 [SubscriptionViewModel.subscribe]，
-/// 订阅成功后热门列表的 popularity 与订阅状态会自动同步。
+/// 调用方传入 [vm]，sheet 内部调用 [SubscriptionViewModel.subscribeById]
+/// 订阅热门主播或 [SubscriptionViewModel.wish] 提交想看意愿。
 Future<void> showAddSubscriptionSheet(
   BuildContext context,
   SubscriptionViewModel vm,
@@ -52,14 +52,14 @@ class _AddSubscriptionSheetState extends State<_AddSubscriptionSheet> {
     });
   }
 
-  Future<void> _onManualSubscribe(String douyinId) async {
-    await widget.vm.subscribe(douyinId);
-    // 订阅成功后关闭弹框
+  Future<void> _onWish(String douyinId) async {
+    await widget.vm.wish(douyinId);
+    // 提交想看意愿后关闭弹框（成功消息由 subscriptions_page toast 展示）
     if (mounted) Navigator.of(context).pop();
   }
 
   Future<void> _onPopularSubscribe(Streamer s) async {
-    await widget.vm.subscribe(s.douyinId);
+    await widget.vm.subscribeById(s.id);
     // 不关闭弹框：用户可能连续订阅多个，且能看到状态变化
   }
 
@@ -90,8 +90,8 @@ class _AddSubscriptionSheetState extends State<_AddSubscriptionSheet> {
                   ),
                   const Divider(height: 1, color: AppColors.sheetDivider),
                   ManualAddSection(
-                    onSubscribe: _onManualSubscribe,
-                    subscribing: state.subscribing,
+                    onWish: _onWish,
+                    wishing: state.wishing,
                   ),
                 ],
               ),
@@ -145,7 +145,7 @@ class _AddSubscriptionSheetState extends State<_AddSubscriptionSheet> {
         child: Padding(
           padding: EdgeInsets.all(AppSpacing.xxl),
           child: Text(
-            '暂无热门主播，手动输入抖音号添加',
+            '暂无热门主播，输入抖音号提交想看',
             style: TextStyle(
                 fontSize: AppTextScale.hint, color: AppColors.subInk),
           ),

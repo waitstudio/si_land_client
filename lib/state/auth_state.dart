@@ -12,6 +12,7 @@ class AuthState {
     this.agreed = false,
     this.sending = false,
     this.loading = false,
+    this.updating = false,
     this.countdown = 0,
     this.error,
     this.loggedInUser,
@@ -29,6 +30,9 @@ class AuthState {
 
   /// 登录中
   final bool loading;
+
+  /// 修改昵称中
+  final bool updating;
 
   /// 倒计时剩余秒数
   final int countdown;
@@ -66,6 +70,7 @@ class AuthState {
     bool? agreed,
     bool? sending,
     bool? loading,
+    bool? updating,
     int? countdown,
     String? error,
     User? loggedInUser,
@@ -82,6 +87,7 @@ class AuthState {
       agreed: agreed ?? this.agreed,
       sending: sending ?? this.sending,
       loading: loading ?? this.loading,
+      updating: updating ?? this.updating,
       countdown: countdown ?? this.countdown,
       error: clearError ? null : (error ?? this.error),
       loggedInUser: clearUser ? null : (loggedInUser ?? this.loggedInUser),

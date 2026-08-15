@@ -4,7 +4,9 @@ import 'package:provider/provider.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../state/auth_view_model.dart';
 import '../../components/streamer_avatar.dart';
+import '../../components/toast.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_text_scale.dart';
 import '../legal/privacy_policy.dart';
@@ -12,7 +14,7 @@ import '../legal/user_agreement.dart';
 
 /// 我的页面（Tab 之一）
 ///
-/// 展示当前登录用户信息，提供协议入口与退出登录。
+/// 展示当前登录用户信息，提供修改昵称、协议入口与退出登录。
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
 
@@ -54,6 +56,12 @@ class ProfilePage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.xxxl),
+            const _Divider(),
+            _MenuItem(
+              icon: Icons.edit_outlined,
+              title: '修改昵称',
+              onTap: () => _openEditNicknamePage(context, vm),
+            ),
             const _Divider(),
             _MenuItem(
               icon: Icons.description_outlined,
@@ -104,6 +112,173 @@ class ProfilePage extends StatelessWidget {
             child: const Text('退出'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _openEditNicknamePage(BuildContext context, AuthViewModel vm) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _EditNicknameSheet(
+        initialNickname: vm.state.currentUser?.nickname ?? '',
+        onSubmit: (nickname) => vm.updateNickname(nickname),
+      ),
+    );
+  }
+}
+
+/// 修改昵称底部弹层（微信风格）
+///
+/// - 从底部弹入并占满整个窗口，取消时向下滑出
+/// - 顶部 AppBar：左"取消"、中间标题、右"完成"
+/// - 中间输入框：预填当前昵称并自动全选
+/// - 右下角字数统计 x/20
+/// - 输入为空或与原值相同时"完成"禁用；失败在输入框下方红字提示
+class _EditNicknameSheet extends StatefulWidget {
+  const _EditNicknameSheet({
+    required this.initialNickname,
+    required this.onSubmit,
+  });
+
+  final String initialNickname;
+  final Future<({bool success, String? message})> Function(String) onSubmit;
+
+  @override
+  State<_EditNicknameSheet> createState() => _EditNicknameSheetState();
+}
+
+class _EditNicknameSheetState extends State<_EditNicknameSheet> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialNickname);
+    _focusNode = FocusNode();
+    // 进入后自动全选，方便覆盖修改
+    _controller.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: widget.initialNickname.length,
+    );
+    // 延迟请求焦点，等 sheet 滑入动画结束后再弹键盘，
+    // 否则键盘上移会盖住 sheet 的滑入动画
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  bool get _canSubmit {
+    final trimmed = _controller.text.trim();
+    return trimmed.isNotEmpty && trimmed != widget.initialNickname.trim();
+  }
+
+  Future<void> _submit() async {
+    final res = await widget.onSubmit(_controller.text);
+    if (!mounted) return;
+    if (res.success) {
+      showToast(context, '昵称已更新');
+      Navigator.of(context).pop();
+    } else {
+      setState(() => _error = res.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final updating = context.watch<AuthViewModel>().state.updating;
+    final count = _controller.text.runes.length;
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        leading: TextButton(
+          onPressed: updating ? null : () => Navigator.of(context).pop(),
+          style: TextButton.styleFrom(foregroundColor: AppColors.manualHint),
+          child: const Text('取消'),
+        ),
+        title: const Text('修改昵称'),
+        centerTitle: true,
+        actions: [
+          TextButton(
+            onPressed: (updating || !_canSubmit) ? null : _submit,
+            style: TextButton.styleFrom(foregroundColor: AppColors.goldDark),
+            child: updating
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text('完成'),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+        ],
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.pageHorizontal,
+            vertical: AppSpacing.lg,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _controller,
+                focusNode: _focusNode,
+                maxLength: 20,
+                enabled: !updating,
+                decoration: InputDecoration(
+                  hintText: '请输入昵称',
+                  counterText: '',
+                  filled: true,
+                  fillColor: AppColors.fieldFill,
+                  border: OutlineInputBorder(
+                    borderRadius: AppRadius.smR,
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onChanged: (_) {
+                  setState(() => _error = null);
+                },
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  if (_error != null)
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: const TextStyle(
+                          fontSize: AppTextScale.footer,
+                          color: AppColors.error,
+                        ),
+                      ),
+                    )
+                  else
+                    const Spacer(),
+                  Text(
+                    '$count/20',
+                    style: const TextStyle(
+                      fontSize: AppTextScale.footer,
+                      color: AppColors.footer,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

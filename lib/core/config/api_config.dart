@@ -13,16 +13,36 @@ class ApiConfig {
     defaultValue: 'http://127.0.0.1:8080',
   );
 
-  /// 接口路径
-  static const String sendSmsPath = '/api/v1/sms/send';
-  static const String loginPath = '/api/v1/auth/login';
-  static const String authMePath = '/api/v1/auth/me';
+  /// 接口路径（App 端统一 /api/v1/app 前缀）
+  static const String sendSmsPath = '/api/v1/app/sms/send';
+  static const String loginPath = '/api/v1/app/auth/login';
+  static const String authMePath = '/api/v1/app/auth/me';
+  static const String authNicknamePath = '/api/v1/app/auth/nickname';
 
   /// 主播订阅
-  static const String streamersPath = '/api/v1/streamers';
-  static const String streamersPopularPath = '/api/v1/streamers/popular';
-  static String streamerPath(String id) => '/api/v1/streamers/$id';
+  static const String streamersPath = '/api/v1/app/streamers';
+  static const String streamersPopularPath = '/api/v1/app/streamers/popular';
+  static const String streamersWishPath = '/api/v1/app/streamers/wishes';
+  static String streamerPath(String id) => '/api/v1/app/streamers/$id';
   static String streamerCheckLivePath(String id) =>
-      '/api/v1/streamers/$id/check-live';
-  static const String streamersPollPath = '/api/v1/streamers/poll';
+      '/api/v1/app/streamers/$id/check-live';
+  static String streamerSubscribePath(String id) =>
+      '/api/v1/app/streamers/$id/subscribe';
+  static const String streamersPollPath = '/api/v1/app/streamers/poll';
+
+  /// 开播通知
+  static const String noticesPath = '/api/v1/app/notices';
+  static const String noticesReadAllPath = '/api/v1/app/notices/read-all';
+  static const String noticesUnreadCountPath = '/api/v1/app/notices/unread-count';
+  static String noticeReadPath(String id) => '/api/v1/app/notices/$id/read';
+  static String noticePath(String id) => '/api/v1/app/notices/$id';
+  /// 分页查询 URL（page 从 1 开始）
+  static String noticesPagePath({required int page, required int pageSize}) =>
+      '$noticesPath?page=$page&page_size=$pageSize';
+
+  /// WebSocket 端点（token 走 query，握手无法携带 Header）
+  static String wsUrl(String token) {
+    final base = baseUrl.replaceFirst(RegExp(r'^http'), 'ws');
+    return '$base/api/v1/app/ws?token=${Uri.encodeComponent(token)}';
+  }
 }

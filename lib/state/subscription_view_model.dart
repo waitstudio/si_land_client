@@ -44,10 +44,10 @@ class SubscriptionViewModel extends BaseViewModel {
     }
   }
 
-  /// 订阅主播
-  Future<void> subscribe(String douyinId) async {
+  /// 按主播 ID 订阅热门主播
+  Future<void> subscribeById(String streamerId) async {
     _set(_state.copyWith(subscribing: true, clearError: true));
-    final res = await _service.subscribe(douyinId);
+    final res = await _service.subscribeById(streamerId);
 
     if (res.success && res.streamer != null) {
       final streamer = res.streamer!;
@@ -72,6 +72,20 @@ class SubscriptionViewModel extends BaseViewModel {
       ));
     } else {
       _set(_state.copyWith(subscribing: false, error: res.message));
+    }
+  }
+
+  /// 提交想看意愿
+  Future<void> wish(String douyinId) async {
+    _set(_state.copyWith(wishing: true, clearError: true));
+    final res = await _service.wish(douyinId);
+    if (res.success) {
+      _set(_state.copyWith(
+        wishing: false,
+        error: '已提交，目前 ${res.wantCount} 人想看该主播',
+      ));
+    } else {
+      _set(_state.copyWith(wishing: false, error: res.message));
     }
   }
 

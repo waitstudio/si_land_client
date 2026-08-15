@@ -18,6 +18,10 @@ abstract class AuthService {
   /// 通过本地 token 恢复会话（/auth/me），成功返回当前用户
   Future<({bool success, User? user, String? message})> restoreSession();
 
+  /// 修改昵称，成功返回更新后的用户
+  Future<({bool success, User? user, String? message})> updateNickname(
+      String nickname);
+
   /// 退出登录，清除本地 token
   Future<void> logout();
 }
