@@ -18,8 +18,9 @@ class RestAuthRepository implements AuthRepository {
   RestAuthRepository({
     required ApiClient client,
     required AuthStorage authStorage,
-  })  : _client = client,
-        _authStorage = authStorage;
+  }) : this._(client, authStorage);
+
+  RestAuthRepository._(this._client, this._authStorage);
 
   final ApiClient _client;
   final AuthStorage _authStorage;

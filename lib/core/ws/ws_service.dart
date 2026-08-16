@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../config.dart';
+import '../http/api_client.dart';
 
 /// WebSocket 长连接服务
 ///
@@ -15,15 +16,18 @@ import '../config.dart';
 ///
 /// UI 层（弹窗/红点）不在此处理，由上层（如 WsGate）通过回调编排。
 class WsService {
+  WsService(this._apiClient);
+
+  final ApiClient _apiClient;
   WebSocketChannel? _channel;
   StreamSubscription? _sub;
   Timer? _heartbeat;
   Timer? _reconnectTimer;
 
-  String? _token;
   int _retry = 0;
   bool _wantConnect = false;
   bool _authFailed = false;
+  bool _opening = false;
 
   /// 当前是否已建立连接（hello 收到即视为连通）
   bool get isConnected => _channel != null;
@@ -37,10 +41,9 @@ class WsService {
   /// 握手鉴权失败（token 失效），已停止重连，需重新登录
   void Function()? onAuthFailed;
 
-  /// 建立连接（幂等：已连接则跳过；token 变化时重连）
-  void connect(String token) {
-    if (_channel != null && token == _token) return;
-    _token = token;
+  /// 建立连接。每次握手前都用登录态换取一次性短期 ticket。
+  void connect() {
+    if (_channel != null || _opening) return;
     _authFailed = false;
     _wantConnect = true;
     _retry = 0;
@@ -51,7 +54,6 @@ class WsService {
   /// 主动断开并停止重连（登出/销毁时调用）
   void disconnect() {
     _wantConnect = false;
-    _token = null;
     _retry = 0;
     _authFailed = false;
     _teardown();
@@ -59,27 +61,51 @@ class WsService {
 
   /// 回到前台：若已断线则跳过退避等待立即重连
   void resume() {
-    if (!_wantConnect || _channel != null || _token == null || _authFailed) {
+    if (!_wantConnect || _channel != null || _opening || _authFailed) {
       return;
     }
     _reconnectTimer?.cancel();
     _open();
   }
 
-  void _open() {
-    final token = _token;
-    if (token == null) return;
-    final channel = WebSocketChannel.connect(Uri.parse(ApiConfig.wsUrl(token)));
-    _channel = channel;
+  Future<void> _open() async {
+    if (!_wantConnect || _opening || _channel != null) return;
+    _opening = true;
+    try {
+      final response = await _apiClient.get(ApiConfig.wsTicketPath);
+      final code = (response['code'] as num?)?.toInt();
+      if (code != 0) {
+        if (code == 1005) {
+          _authFailed = true;
+          _wantConnect = false;
+          onAuthFailed?.call();
+        } else {
+          _scheduleReconnect();
+        }
+        return;
+      }
+      final data = response['data'];
+      final ticket = data is Map<String, dynamic> ? data['ticket'] as String? : null;
+      if (ticket == null || ticket.isEmpty) {
+        _scheduleReconnect();
+        return;
+      }
+      final channel = WebSocketChannel.connect(Uri.parse(ApiConfig.wsUrl(ticket)));
+      _channel = channel;
 
-    _sub = channel.stream.listen(
-      (data) => _onMessage(data.toString()),
-      onError: (_) => _scheduleReconnect(),
-      onDone: () => _scheduleReconnect(),
-      cancelOnError: true,
-    );
+      _sub = channel.stream.listen(
+        (data) => _onMessage(data.toString()),
+        onError: (_) => _scheduleReconnect(),
+        onDone: () => _scheduleReconnect(),
+        cancelOnError: true,
+      );
 
-    _startHeartbeat();
+      _startHeartbeat();
+    } catch (_) {
+      _scheduleReconnect();
+    } finally {
+      _opening = false;
+    }
   }
 
   void _onMessage(String text) {
@@ -143,7 +169,7 @@ class WsService {
     final delay = (AppConstants.wsReconnectBaseDelaySeconds << _retry)
         .clamp(0, AppConstants.wsReconnectMaxDelaySeconds);
     _retry = (_retry + 1).clamp(0, 6);
-    _reconnectTimer = Timer(Duration(seconds: delay), _open);
+    _reconnectTimer = Timer(Duration(seconds: delay), () => _open());
   }
 
   void _teardown() {

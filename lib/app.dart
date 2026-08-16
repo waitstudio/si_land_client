@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'core/auth/auth_storage.dart';
-import 'core/config.dart';
 import 'core/http/api_client.dart';
+import 'core/notifications/notice_coordinator.dart';
 import 'core/ws/ws_service.dart';
 import 'data/repositories/auth_repository_impl.dart';
 import 'data/repositories/feedback_repository_impl.dart';
@@ -26,9 +26,7 @@ import 'state/unread_badge.dart';
 import 'ui/components/loading_indicator.dart';
 import 'ui/main_shell.dart';
 import 'ui/pages/login/login_page.dart';
-import 'ui/pages/messages/messages_page.dart';
 import 'ui/services/local_notifier.dart';
-import 'ui/services/notice_banner.dart';
 import 'ui/theme/app_theme.dart';
 
 /// 应用根 Widget
@@ -52,8 +50,15 @@ class SiLandApp extends StatelessWidget {
         ),
         // 全局未读红点（WS / 冷启动 / 消息页操作共同维护）
         ChangeNotifierProvider<UnreadBadge>(create: (_) => UnreadBadge()),
+        Provider<NoticeCoordinator>(
+          create: (_) => NoticeCoordinator(),
+          dispose: (_, coordinator) => coordinator.dispose(),
+        ),
         // WS 长连接（由 _WsGate 按登录态编排连接）
-        Provider<WsService>(create: (_) => WsService(), dispose: (_, s) => s.disconnect()),
+        Provider<WsService>(
+          create: (ctx) => WsService(ctx.read<ApiClient>()),
+          dispose: (_, service) => service.disconnect(),
+        ),
         // 认证
         Provider<AuthRepository>(
           create: (ctx) => RestAuthRepository(
@@ -161,11 +166,6 @@ class _WsGate extends StatefulWidget {
 }
 
 class _WsGateState extends State<_WsGate> with WidgetsBindingObserver {
-  final NoticeBannerController _banner = NoticeBannerController();
-
-  /// 防重复弹窗：已弹过的 notice id 缓存（固定容量，FIFO 淘汰）
-  final List<String> _shownIds = <String>[];
-
   bool _appResumed = true;
   bool _wired = false;
   bool _connected = false;
@@ -179,7 +179,6 @@ class _WsGateState extends State<_WsGate> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _banner.dispose();
     super.dispose();
   }
 
@@ -195,60 +194,20 @@ class _WsGateState extends State<_WsGate> with WidgetsBindingObserver {
   void _wireCallbacks(WsService ws, UnreadBadge badge, NoticeViewModel noticeVm) {
     if (_wired) return;
     _wired = true;
-    ws.onNotice = (data) => _onNotice(data, badge, noticeVm);
+    ws.onNotice = (data) => context.read<NoticeCoordinator>().handleNotice(
+          data,
+          badge: badge,
+          noticeViewModel: noticeVm,
+          appResumed: _appResumed,
+        );
     ws.onUnread = badge.setCount;
-  }
-
-  void _onNotice(
-      Map<String, dynamic> data, UnreadBadge badge, NoticeViewModel noticeVm) {
-    final id = data['id'] as String?;
-    if (id == null || id.isEmpty) return;
-
-    // 防重复弹窗：同一通知只处理一次（重连后服务端重推场景）
-    if (_shownIds.contains(id)) return;
-    _shownIds.add(id);
-    if (_shownIds.length > AppConstants.noticeDedupCacheSize) {
-      _shownIds.removeRange(
-          0, _shownIds.length - AppConstants.noticeDedupCacheSize);
-    }
-
-    // 红点乐观 +1（随后的 unread 权威消息会校准）
-    badge.increment();
-
-    // 同步消息页列表：未加载过用 load（loading 骨架），已加载用 refresh（静默换第 1 页）
-    if (noticeVm.state.currentPage == 0) {
-      noticeVm.load();
-    } else if (!noticeVm.state.refreshing) {
-      noticeVm.refresh();
-    }
-
-    // 切后台不展示 App 内弹窗（离线推送由系统通道负责）
-    if (!_appResumed) return;
-    final overlay = LocalNotifier.instance.navigatorKey.currentState?.overlay;
-    if (overlay == null) return;
-
-    _banner.show(
-      overlay: overlay,
-      nickname: data['streamer_nickname'] as String? ?? '',
-      avatar: data['avatar'] as String? ?? '',
-      body: data['body'] as String? ?? '',
-      onTap: _goToMessages,
-    );
-  }
-
-  void _goToMessages() {
-    final nav = LocalNotifier.instance.navigatorKey.currentState;
-    if (nav == null) return;
-    // 若在二级页面（如主播详情），先回到主壳再进入消息页
-    nav.popUntil((r) => r.isFirst);
-    nav.push(MaterialPageRoute(builder: (_) => const MessagesPage()));
   }
 
   /// 登录后：拉取权威未读数 + 建立 WS 连接（token 变化时自动重连）
   Future<void> _onLoggedIn(
       WsService ws, UnreadBadge badge, AuthStorage storage, NoticeService noticeService) async {
-    final token = storage.read();
-    if (token == null) return;
+    final token = await storage.read();
+    if (token == null || !mounted) return;
     _wireCallbacks(ws, badge, context.read<NoticeViewModel>());
     if (!_connected) {
       _connected = true;
@@ -256,15 +215,14 @@ class _WsGateState extends State<_WsGate> with WidgetsBindingObserver {
       final res = await noticeService.unreadCount();
       if (res.success) badge.setCount(res.count);
     }
-    ws.connect(token);
+    ws.connect();
   }
 
   void _onLoggedOut(WsService ws, UnreadBadge badge) {
     _connected = false;
     ws.disconnect();
     badge.clear();
-    _shownIds.clear();
-    _banner.dispose();
+    context.read<NoticeCoordinator>().clear();
   }
 
   @override

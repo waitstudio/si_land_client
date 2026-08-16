@@ -18,6 +18,7 @@ class ApiConfig {
   static const String loginPath = '/api/v1/app/auth/login';
   static const String authMePath = '/api/v1/app/auth/me';
   static const String authNicknamePath = '/api/v1/app/auth/nickname';
+  static const String wsTicketPath = '/api/v1/app/auth/ws-ticket';
 
   /// 主播订阅
   static const String streamersPath = '/api/v1/app/streamers';
@@ -43,9 +44,9 @@ class ApiConfig {
   /// 问题反馈
   static const String feedbackPath = '/api/v1/app/feedback';
 
-  /// WebSocket 端点（token 走 query，握手无法携带 Header）
-  static String wsUrl(String token) {
+  /// WebSocket 端点（一次性短期 ticket 走 query，避免长期 JWT 出现在 URL）。
+  static String wsUrl(String ticket) {
     final base = baseUrl.replaceFirst(RegExp(r'^http'), 'ws');
-    return '$base/api/v1/app/ws?token=${Uri.encodeComponent(token)}';
+    return '$base/api/v1/app/ws?ticket=${Uri.encodeComponent(ticket)}';
   }
 }

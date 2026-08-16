@@ -19,9 +19,13 @@ import '../result.dart';
 /// 业务层通过 [ApiClient] 调用，不直接接触 http 包。
 class ApiClient {
   ApiClient({http.Client? client, Duration? timeout, AuthStorage? authStorage})
-      : _client = client ?? http.Client(),
-        _timeout = timeout ?? const Duration(seconds: 15),
-        _authStorage = authStorage;
+      : this._(
+          client ?? http.Client(),
+          timeout ?? const Duration(seconds: 15),
+          authStorage,
+        );
+
+  ApiClient._(this._client, this._timeout, this._authStorage);
 
   final http.Client _client;
   final Duration _timeout;
@@ -109,7 +113,7 @@ class ApiClient {
   Future<Map<String, String>> _buildHeaders(bool auth) async {
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (auth && _authStorage != null) {
-      final token = _authStorage.read();
+      final token = await _authStorage.read();
       if (token != null) {
         headers['Authorization'] = 'Bearer $token';
       }
