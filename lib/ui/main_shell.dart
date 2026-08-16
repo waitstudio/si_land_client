@@ -4,12 +4,11 @@ import 'package:provider/provider.dart';
 import '../state/unread_badge.dart';
 import 'theme/app_colors.dart';
 import 'theme/app_text_scale.dart';
-import 'pages/discover/discover_page.dart';
 import 'pages/messages/messages_page.dart';
 import 'pages/profile/profile_page.dart';
 import 'pages/subscriptions/subscriptions_page.dart';
 
-/// 主框架：底部 4 Tab 导航
+/// 主框架：底部 3 Tab 导航
 ///
 /// 用 [IndexedStack] 保持各 Tab 页面状态，切换不重建。
 class MainShell extends StatefulWidget {
@@ -22,10 +21,9 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  late int _index = widget.initialIndex.clamp(0, 3);
+  late int _index = widget.initialIndex.clamp(0, 2);
 
   static const _pages = <Widget>[
-    DiscoverPage(),
     SubscriptionsPage(),
     MessagesPage(),
     ProfilePage(),
@@ -46,8 +44,6 @@ class _MainShellState extends State<MainShell> {
         selectedFontSize: AppTextScale.caption + 1,
         unselectedFontSize: AppTextScale.caption + 1,
         items: [
-          const BottomNavigationBarItem(
-              icon: Icon(Icons.explore_outlined), label: '发现'),
           const BottomNavigationBarItem(
               icon: Icon(Icons.star_outline), label: '订阅'),
           BottomNavigationBarItem(

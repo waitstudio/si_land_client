@@ -9,6 +9,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_radius.dart';
 import '../../theme/app_spacing.dart';
 import '../../theme/app_text_scale.dart';
+import '../feedback/feedback_page.dart';
 import '../legal/privacy_policy.dart';
 import '../legal/user_agreement.dart';
 
@@ -63,6 +64,13 @@ class ProfilePage extends StatelessWidget {
               onTap: () => _openEditNicknamePage(context, vm),
             ),
             const _Divider(),
+            _MenuItem(
+              icon: Icons.feedback_outlined,
+              title: '问题反馈',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const FeedbackPage()),
+              ),
+            ),
             _MenuItem(
               icon: Icons.description_outlined,
               title: '用户协议',

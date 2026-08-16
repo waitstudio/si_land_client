@@ -40,6 +40,9 @@ class ApiConfig {
   static String noticesPagePath({required int page, required int pageSize}) =>
       '$noticesPath?page=$page&page_size=$pageSize';
 
+  /// 问题反馈
+  static const String feedbackPath = '/api/v1/app/feedback';
+
   /// WebSocket 端点（token 走 query，握手无法携带 Header）
   static String wsUrl(String token) {
     final base = baseUrl.replaceFirst(RegExp(r'^http'), 'ws');

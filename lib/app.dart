@@ -6,9 +6,11 @@ import 'core/config.dart';
 import 'core/http/api_client.dart';
 import 'core/ws/ws_service.dart';
 import 'data/repositories/auth_repository_impl.dart';
+import 'data/repositories/feedback_repository_impl.dart';
 import 'data/repositories/notice_repository_impl.dart';
 import 'data/repositories/subscription_repository_impl.dart';
 import 'domain/repositories/auth_repository.dart';
+import 'domain/repositories/feedback_repository.dart';
 import 'domain/repositories/notice_repository.dart';
 import 'domain/repositories/subscription_repository.dart';
 import 'domain/services/auth_service.dart';
@@ -93,6 +95,10 @@ class SiLandApp extends StatelessWidget {
         ChangeNotifierProvider<NoticeViewModel>(
           create: (ctx) =>
               NoticeViewModel(ctx.read<NoticeService>(), ctx.read<UnreadBadge>()),
+        ),
+        // 问题反馈
+        Provider<FeedbackRepository>(
+          create: (ctx) => RestFeedbackRepository(client: ctx.read<ApiClient>()),
         ),
       ],
       child: MaterialApp(

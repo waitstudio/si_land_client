@@ -33,6 +33,9 @@ class AppConstants {
   /// 通知列表每页条数
   static const int noticePageSize = 20;
 
+  /// 问题反馈最大字数
+  static const int feedbackMaxLength = 500;
+
   /// 开播通知调度延迟（秒）
   static const int notifyScheduleDelaySeconds = 15;
 
