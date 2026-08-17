@@ -155,6 +155,18 @@ class SubscriptionViewModel extends BaseViewModel {
     }
   }
 
+  /// 收到开播通知时本地同步：标记开播并移到列表顶部
+  ///
+  /// 不发请求，直接基于现有状态更新，保证订阅列表即时反映最新开播。
+  void markLive(String streamerId, int? liveStartedAt) {
+    final idx = _state.streamers.indexWhere((s) => s.id == streamerId);
+    if (idx < 0) return;
+    final streamer =
+        _state.streamers[idx].copyWith(live: true, liveStartedAt: liveStartedAt);
+    final next = [..._state.streamers]..removeAt(idx)..insert(0, streamer);
+    _set(_state.copyWith(streamers: next));
+  }
+
   void clearError() => _set(_state.copyWith(clearError: true));
 
   void clearPendingNotify() => _set(_state.copyWith(clearNotify: true));

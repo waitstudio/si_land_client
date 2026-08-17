@@ -35,7 +35,7 @@ class _MockAuthService implements AuthService {
         user: User(
           userId: 'u',
           phone: phone,
-          nickname: '硅基星球用户',
+          nickname: '矽澜用户',
           avatar: '',
         ),
       ),
@@ -73,7 +73,7 @@ void main() {
   testWidgets('LoginPage renders title and inputs', (tester) async {
     await tester.pumpWidget(_buildApp());
 
-    expect(find.text('进入硅基星球'), findsWidgets);
+    expect(find.text('进入矽澜'), findsWidgets);
     expect(find.text('请输入手机号'), findsOneWidget);
     expect(find.text('请输入验证码'), findsOneWidget);
     expect(find.textContaining('《用户协议》'), findsOneWidget);

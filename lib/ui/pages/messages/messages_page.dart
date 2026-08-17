@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:provider/provider.dart';
@@ -197,7 +199,9 @@ class _UnreadBanner extends StatelessWidget {
 }
 
 /// 单条通知条目
-class _NoticeTile extends StatelessWidget {
+///
+/// 时间为相对时间（刚刚/N分钟前），通过定时器周期刷新保持实时。
+class _NoticeTile extends StatefulWidget {
   const _NoticeTile({
     required this.notice,
     required this.onTap,
@@ -207,10 +211,34 @@ class _NoticeTile extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_NoticeTile> createState() => _NoticeTileState();
+}
+
+class _NoticeTileState extends State<_NoticeTile> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    // 30s 一刷：覆盖"刚刚→N分钟前"及更粗粒度的变化
+    _timer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _timer = null;
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final notice = widget.notice;
     final unread = !notice.read;
     return InkWell(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.white,

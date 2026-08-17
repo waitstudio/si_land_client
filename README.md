@@ -1,176 +1,78 @@
 # si_land_client
 
-硅基星球（si_land）项目移动端，基于 Flutter 构建。
+矽澜（si_land）移动端 App，基于 Flutter 构建。订阅你关注的抖音主播，开播第一时间收到通知，不再错过喜欢的直播。
 
-> 当前阶段：完成手机号验证码登录页面的 UI 与流程，接入 [si_land_server](../si_land_server) 的 mock 接口。
+配套项目：[si_land_server](https://github.com/waitstudio/si_land_server)（Rust 后端） / [si_land_admin](https://github.com/waitstudio/si_land_admin)（管理后台）。
+
+## 界面预览
+
+<p align="center">
+<img src="assets/1-登录页面.png" width="19%" /><img src="assets/2-订阅列表.png" width="19%" /><img src="assets/3-订阅热门主播.png" width="19%" /><img src="assets/4-我的页面.png" width="19%" /><img src="assets/5-消息列表.png" width="19%" />
+</p>
+
+## 功能特性
+
+### 登录
+- 手机号验证码登录，自动校验手机号格式与验证码位数
+- 验证码 60 秒重发倒计时
+- 用户协议与隐私政策查看
+
+### 主播订阅
+- 订阅列表：展示已订阅主播的开播状态，收到开播通知后自动置顶并更新「直播中」标签
+- 检测开播：对单个主播发起实时开播检测
+- 批量轮询：一键检测全部订阅主播的开播状态
+- 添加订阅：从热门主播列表（按人气排序，最多 100 名）中挑选订阅
+- 想看意愿：列表中没有的主播，可提交抖音号表达「想看」，推动主播入选
+- 取消订阅
+
+### 实时通知
+- WebSocket 长连接：开播后秒级收到通知
+- 应用内顶部弹窗：点击直达消息页，同屏最多展示一条，自动去重防重复弹窗
+- 全局未读红点：乐观更新 + 服务端权威校准，展示封顶 99+
+- 断线自动重连：指数退避（1s → 60s 封顶），应用回到前台立即重连
+- 切后台时抑制弹窗，回前台正常展示
+
+### 消息中心
+- 开播通知列表：主播头像、通知内容、相对时间（刚刚 / N 分钟前，实时跳变）
+- 未读总数横幅 + 一键全部已读
+- 单条点击标为已读、左滑删除
+- 下拉刷新、上拉分页加载
+
+### 我的
+- 个人信息展示
+- 问题反馈提交
+- 用户协议与隐私政策
 
 ## 技术栈
 
-- 框架：Flutter（Dart SDK ^3.12.2）
-- 状态管理：[provider](https://pub.dev/packages/provider) ^6.1.2（ChangeNotifier + ViewModel）
-- 网络：[http](https://pub.dev/packages/http) ^1.2.2
-- 设计语言：白底金色（Material 3，Light 主题）
+Flutter · provider（MVVM）· WebSocket · Material 3（白底金色设计语言）
 
-## 架构概览
+## 运行流程
 
-采用 **Clean Architecture 分层** 架构，与后端呼应，关注点分离：
-
-```
-UI 事件
-   │
-   ▼
-ui/                          表现层
-   pages/<模块>/              页面：组装 widgets，转发事件给 ViewModel
-   widgets/                  可复用组件 + 页面私有组件
-   theme/                    主题与颜色
-   │  Widget 只做 UI 组装，不写业务逻辑
-   ▼
-state/                       状态层（ViewModel）
-   auth_view_model.dart      AuthViewModel + AuthState（ChangeNotifier）
-   │  持有状态，编排 domain 服务，UI 通过 Provider 订阅
-   ▼
-domain/                      领域层（纯 Dart，不依赖 Flutter / http）
-   entities/                 领域实体（User、AuthToken、LoginResult）
-   repositories/             仓库抽象（AuthRepository）
-   services/                 服务抽象 + 默认实现（AuthService）
-   utils/                    校验工具（phone.dart）
-   │  定义契约，不依赖具体实现
-   ▼
-data/                        数据层
-   models/                  DTO（与后端响应字段对齐）
-   repositories/            仓库实现（RestAuthRepository 调 HTTP）
-   │  实现 domain 抽象，把 DTO 映射为领域实体
-   ▼
-core/                        基础设施
-   config.dart              全局配置（baseUrl、接口路径）
-   errors.dart              统一错误类型（sealed AppException）
-   result.dart              Result<T> 包装（成功/失败）
-   http/api_client.dart     HTTP 客户端封装
-```
-
-### 依赖注入
-
-在 [app.dart](lib/app.dart) 通过 `MultiProvider` 装配：
-
-``ApiClient → AuthRepository → AuthService → AuthViewModel``
-
-UI 通过 `context.watch<AuthViewModel>()` 拿状态，通过 `context.read<AuthViewModel>().login()` 调方法，不直接接触 service / repository。
-
-### 扩展指引
-
-- **新增功能模块**：在 `domain/` 定义实体与抽象 → `data/` 实现 → `state/` 加 ViewModel → `ui/pages/` 加页面。
-- **替换数据源（如 GraphQL）**：实现 `AuthRepository`，在 [app.dart](lib/app.dart) 替换 Provider 即可，UI 与 domain 不动。
-- **替换状态管理（如 Riverpod / Bloc）**：只需替换 `state/` 层实现，domain / data 不动。
-- **替换 HTTP 库（如 dio）**：只需改 `core/http/api_client.dart`，上层不动。
-
-## 目录结构
-
-```
-si_land_client/
-├── lib/
-│   ├── main.dart                          # 入口
-│   ├── app.dart                           # MaterialApp + 主题 + Provider 装配
-│   ├── core/
-│   │   ├── config.dart
-│   │   ├── errors.dart
-│   │   ├── result.dart
-│   │   └── http/api_client.dart
-│   ├── data/
-│   │   ├── models/
-│   │   │   ├── api_response.dart
-│   │   │   ├── sms.dart
-│   │   │   └── user.dart
-│   │   └── repositories/
-│   │       └── auth_repository_impl.dart
-│   ├── domain/
-│   │   ├── entities/
-│   │   │   ├── user.dart
-│   │   │   └── auth.dart
-│   │   ├── repositories/
-│   │   │   └── auth_repository.dart
-│   │   ├── services/
-│   │   │   ├── auth_service.dart
-│   │   │   └── auth_service_impl.dart
-│   │   └── utils/phone.dart
-│   ├── state/
-│   │   └── auth_view_model.dart
-│   └── ui/
-│       ├── theme/app_theme.dart
-│       └── pages/
-│           └── login/
-│               ├── login_page.dart
-│               └── widgets/
-│                   ├── login_header.dart
-│                   ├── phone_field.dart
-│                   ├── code_field.dart
-│                   ├── send_code_button.dart
-│                   ├── login_button.dart
-│                   └── agreement.dart
-├── test/
-│   └── widget_test.dart                   # 登录页冒烟测试（注入 mock AuthService）
-└── pubspec.yaml
-```
-
-## 登录页功能
-
-- 手机号输入：11 位数字，自动过滤非数字字符
-- 手机号校验：正则 `^1[3-9]\d{9}$`（覆盖 13x-19x 全号段）
-- 验证码输入：4–6 位数字
-- 获取验证码：60 秒倒计时，倒计时中按钮置灰
-- 登录按钮：手机号、验证码均有效并勾选用户协议后激活
-- 网络异常、业务错误统一通过 SnackBar 提示
-- 设计风格：白底金色，按钮无图标
-- 文案：主动语态（"进入硅基星球" / "使用手机号验证码即可继续"）
-
-## 快速开始
-
-### 1. 安装依赖
+环境要求：Flutter（Dart SDK ^3.12）；需先启动 [si_land_server](../si_land_server)。
 
 ```bash
+# 1. 安装依赖
 flutter pub get
-```
 
-### 2. 启动后端 mock 服务
-
-参见 [../si_land_server/README.md](../si_land_server/README.md)，默认监听 `http://127.0.0.1:8080`。
-
-### 3. 配置后端地址
-
-默认 `lib/core/config.dart` 中 `baseUrl` 为 `http://127.0.0.1:8080`，可通过启动参数覆盖：
-
-```bash
-# iOS 模拟器
+# 2. 运行（按运行目标指定后端地址）
+# iOS 模拟器（本机后端）
 flutter run --dart-define=BASE_URL=http://127.0.0.1:8080
-
-# Android 模拟器（宿主机服务需用 10.0.2.2）
+# Android 模拟器（宿主机后端需用 10.0.2.2）
 flutter run --dart-define=BASE_URL=http://10.0.2.2:8080
-
-# 真机调试（替换为你的本机局域网 IP）
+# 真机调试（替换为本机局域网 IP）
 flutter run --dart-define=BASE_URL=http://192.168.1.100:8080
-```
 
-### 4. 运行
-
-```bash
-flutter run
-```
-
-### 5. 测试
-
-```bash
+# 3. 测试
 flutter test
 ```
 
-测试使用 mock `AuthService` 注入，不依赖真实网络。
+登录：输入 11 位手机号获取验证码。开发环境后端默认固定验证码 `1234`（由 `MOCK_FIXED_CODE` 配置）。
 
-## Mock 验证码
+## 免责声明
 
-当前后端为 mock 实现，固定验证码为 `1234`，输入任意 11 位手机号点击「获取验证码」后，用 `1234` 登录即可。
-
-## 后续路线
-
-- [ ] token 持久化（flutter_secure_storage）
-- [ ] 全局用户状态（AuthStore）
-- [ ] 路由模块化（go_router）+ 鉴权守卫
-- [ ] 国际化与多语言
-- [ ] 主题深浅色切换
+1. 本项目**仅供个人学习与技术研究用途**，严禁用于任何商业用途或违法违规用途。
+2. 本项目涉及对第三方平台（抖音）数据的访问与解析，相关实现仅用于技术研究演示。使用者应遵守抖音平台的相关服务条款，不得对平台服务造成干扰或滥用其接口。
+3. 本项目不提供任何明示或默示的保证，不对数据的准确性、完整性与时效性作任何承诺。使用者因使用本项目产生的任何直接或间接损失，作者不承担任何责任。
+4. 开播状态、主播信息等数据版权归原平台及主播所有。若相关权利人认为本项目侵犯了其合法权益，请通过 Issue 联系，核实后将及时处理。
+5. 使用本项目产生的任何行为与后果，均由使用者本人承担。请在使用前了解并遵守您所在地区及目标平台适用的法律法规。

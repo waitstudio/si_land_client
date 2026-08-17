@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/config.dart';
 import '../../state/notice_view_model.dart';
+import '../../state/subscription_view_model.dart';
 import '../../state/unread_badge.dart';
 import '../../ui/pages/messages/messages_page.dart';
 import '../../ui/services/local_notifier.dart';
@@ -16,6 +17,7 @@ class NoticeCoordinator {
     Map<String, dynamic> data, {
     required UnreadBadge badge,
     required NoticeViewModel noticeViewModel,
+    required SubscriptionViewModel subscriptionViewModel,
     required bool appResumed,
   }) {
     final id = data['id'] as String?;
@@ -26,6 +28,11 @@ class NoticeCoordinator {
     }
 
     badge.increment();
+    // 订阅列表同步：标记开播并置顶（后台收到也更新，回前台即见最新状态）
+    final streamerId = data['streamer_id'] as String?;
+    if (streamerId != null && streamerId.isNotEmpty) {
+      subscriptionViewModel.markLive(streamerId, data['live_started_at'] as int?);
+    }
     if (noticeViewModel.state.currentPage == 0) {
       noticeViewModel.load();
     } else if (!noticeViewModel.state.refreshing) {

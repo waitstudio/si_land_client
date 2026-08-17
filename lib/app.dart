@@ -107,7 +107,7 @@ class SiLandApp extends StatelessWidget {
         ),
       ],
       child: MaterialApp(
-        title: '硅基星球',
+        title: '矽澜',
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
         navigatorKey: LocalNotifier.instance.navigatorKey,
@@ -191,13 +191,15 @@ class _WsGateState extends State<_WsGate> with WidgetsBindingObserver {
     }
   }
 
-  void _wireCallbacks(WsService ws, UnreadBadge badge, NoticeViewModel noticeVm) {
+  void _wireCallbacks(WsService ws, UnreadBadge badge, NoticeViewModel noticeVm,
+      SubscriptionViewModel subscriptionVm) {
     if (_wired) return;
     _wired = true;
     ws.onNotice = (data) => context.read<NoticeCoordinator>().handleNotice(
           data,
           badge: badge,
           noticeViewModel: noticeVm,
+          subscriptionViewModel: subscriptionVm,
           appResumed: _appResumed,
         );
     ws.onUnread = badge.setCount;
@@ -208,7 +210,8 @@ class _WsGateState extends State<_WsGate> with WidgetsBindingObserver {
       WsService ws, UnreadBadge badge, AuthStorage storage, NoticeService noticeService) async {
     final token = await storage.read();
     if (token == null || !mounted) return;
-    _wireCallbacks(ws, badge, context.read<NoticeViewModel>());
+    _wireCallbacks(
+        ws, badge, context.read<NoticeViewModel>(), context.read<SubscriptionViewModel>());
     if (!_connected) {
       _connected = true;
       // 冷启动主动拉取未读数（WS 不可用时红点也有权威值）

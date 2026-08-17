@@ -15,7 +15,7 @@ class LoginHeader extends StatelessWidget {
       children: [
         SizedBox(height: 64),
         Text(
-          '进入硅基星球',
+          '进入矽澜',
           style: TextStyle(
             fontSize: AppTextScale.display + 2,
             fontWeight: FontWeight.bold,

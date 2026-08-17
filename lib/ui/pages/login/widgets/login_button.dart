@@ -26,7 +26,7 @@ class LoginButton extends StatelessWidget {
                 valueColor: AlwaysStoppedAnimation(Colors.white),
               ),
             )
-          : const Text('进入硅基星球'),
+          : const Text('进入矽澜'),
     );
   }
 }
